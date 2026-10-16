@@ -6,6 +6,11 @@
 // an exact FP8 reference model with ties rounded to even.
 module FP8_tb;
 
+    initial begin
+        $fsdbDumpfile("FP8_tb.fsdb");
+        $fsdbDumpvars(0, FP8_tb);
+    end
+
     reg  [7:0] a, b;
     reg        operation;
     wire [7:0] addsub_result, mult_result;

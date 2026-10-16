@@ -26,7 +26,7 @@ run: compile
 # Run the simulation and open the waveform in Verdi
 waves: compile
 	./$(SIM) -exitstatus 2>&1 | tee simulation.log
-	verdi -dbdir $(SIM).daidir -ssf $(FSDB) #-sswr signal.rc &
+	verdi -dbdir $(SIM).daidir -ssf $(FSDB) -sswr signal.rc &
 
 # Remove generated simulation and waveform files
 clean:
