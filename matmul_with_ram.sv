@@ -22,7 +22,8 @@ module matrix_multiplication
     input  vec_t                         bram_wdata_c_ext,
     input  logic [MASK_WIDTH-1:0]        bram_we_c_ext,
     input  logic                         start, //starts the matmul operation
-    output logic                         done   //asserts when matmul operation is complete
+    output logic                         done,   //asserts when matmul operation is complete
+    output logic [4:0]                   exception_flags
 );
 
     logic [AWIDTH-1:0]     bram_addr_a, bram_addr_b, bram_addr_c;

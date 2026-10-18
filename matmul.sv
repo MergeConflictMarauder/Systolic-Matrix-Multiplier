@@ -8,6 +8,7 @@ module matmul_4x4_systolic
     input  logic                         pe_reset,
     input  logic                         start_mat_mul,
     output logic                         done_mat_mul,
+    output logic [4:0]                   exception_flags,
     input  logic [AWIDTH-1:0]            address_mat_a, address_mat_b, address_mat_c,
     input  logic [ADDR_STRIDE_WIDTH-1:0] address_stride_a, address_stride_b, address_stride_c,
     input  vec_t                         a_data,
@@ -77,10 +78,10 @@ module matmul_4x4_systolic
 //////////////////////////////////////////////////////////////////////////
     vec_t a_pe, b_pe;
 
-    // b_loc == 0: b comes from memory; otherwise, from the matmul above.
+    // b_loc == 0: A comes from memory; otherwise, from the matmul to the left.
     assign a_pe = (b_loc == 0) ? a_skewed : a_data_in;
 
-    // a_loc == 0: b comes from memory; otherwise, from the matmul to the left.
+    // a_loc == 0: B comes from memory; otherwise, from the matmul above.
     assign b_pe = (a_loc == 0) ? b_skewed : b_data_in;
 
     mat_t c_cols;  //c_cols[j][i] is C[i][j]
@@ -130,7 +131,6 @@ module output_logic
 
     assign c_data_out = c_shift[0];
 
-//For larger matmuls, this logic will have more entries in the case statement
     always_ff @(posedge clk) begin
         if (reset || !start_mat_mul) begin
             start_capturing_c_data <= 1'b0;
@@ -267,7 +267,8 @@ module systolic_pe_matrix
     input  vec_t b_pe,       //b_pe[j] enters column j of the mesh from the top
     output mat_t c_cols,     //c_cols[j][i] is the result of PE(i,j), i.e. C[i][j]
     output vec_t a_data_out, //values leaving the right edge, one per row
-    output vec_t b_data_out  //values leaving the bottom edge, one per column
+    output vec_t b_data_out,  //values leaving the bottom edge, one per column
+    output logic [4:0] exception_flags
 );
 
     logic effective_rst;
@@ -278,6 +279,8 @@ module systolic_pe_matrix
     // All PEs share the same clock and reset.
     data_t a_h [MAT_MUL_SIZE][MAT_MUL_SIZE+1];
     data_t b_v [MAT_MUL_SIZE+1][MAT_MUL_SIZE];
+    // One 5-bit exception vector from each of the PEs. 
+    logic [4:0] pe_flags [MAT_MUL_SIZE][MAT_MUL_SIZE];
 
     for (genvar i = 0; i < MAT_MUL_SIZE; i++) begin : g_row
         assign a_h[i][0]     = a_pe[i];
@@ -293,8 +296,17 @@ module systolic_pe_matrix
                 .in_b (b_v[i][j]),
                 .out_a(a_h[i][j+1]),
                 .out_b(b_v[i+1][j]),
-                .out_c(c_cols[j][i]));
+                .out_c(c_cols[j][i]),
+                .flags(pe_flags[i][j]));
         end
+    end
+
+    // OR the exception vectors from all the PEs.
+    always_comb begin
+        exception_flags = '0;
+        for (int k = 0; k < MAT_MUL_SIZE; k++)
+            for (int l = 0; l < MAT_MUL_SIZE; l++)
+                exception_flags |= pe_flags[k][l];
     end
 
 endmodule
@@ -311,10 +323,11 @@ module processing_element
     input  data_t in_b,
     output data_t out_a,
     output data_t out_b,
-    output data_t out_c  //reduced precision
+    output data_t out_c,
+    output logic [4:0] flags
 );
 
-    seq_mac u_mac (.*, .a(in_a), .b(in_b), .out(out_c));
+    seq_mac u_mac (.*, .a(in_a), .b(in_b), .out(out_c), .flags(flags));
 
     always_ff @(posedge clk) begin
         if (reset) {out_a, out_b} <= '0;
@@ -333,20 +346,33 @@ module seq_mac
     input  logic  reset,
     input  data_t a,
     input  data_t b,
-    output data_t out
+    output data_t out,
+    output logic [4:0] flags
 );
 
     data_t a_flop, b_flop, mult;
+
+    // Combinational outputs from the FP8 multiplier and adder.
+    data_t      mult_result, add_result;
+    logic [4:0] mult_flags, add_flags;
+
+    FP8_Mult   u_fp8_mult (.a(a_flop), .b(b_flop), .result(mult_result), .flags(mult_flags));
+    FP8_AddSub u_fp8_add  (.a(mult), .b(out), .operation(1'b0), .result(add_result), .flags(add_flags));
+
+    // Combine exception flags from the multiplier and adder.
+    assign flags = mult_flags | add_flags;
 
     always_ff @(posedge clk) begin
         if (reset) begin
             {out, a_flop, b_flop, mult} <= '0;
         end else begin
+
+            // Stage 1: register incoming FP8 operands
             a_flop <= a;
             b_flop <= b;
 
-            mult <= a_flop * b_flop;
-            out  <= mult + out;
+            mult <= mult_result;    // Stage 2: register the FP8 multiplier output
+            out  <= add_result;     // Stage 3: accumulate the FP8 adder output
         end
     end
 
