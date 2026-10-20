@@ -1,0 +1,10 @@
+simv_*
+*.daidir/
+csrc/
+*.fsdb
+*.vpd
+*.log
+ucli.key
+synth/reports/
+*.ddc
+*.svf
