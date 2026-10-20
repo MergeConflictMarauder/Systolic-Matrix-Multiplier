@@ -1,95 +1,10 @@
-# ==============================
-# Editor / IDE
-# ==============================
-*~
-*.swp
-*.swo
-.vscode/
-.idea/
-
-# ==============================
-# Python
-# ==============================
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.venv/
-venv/
-env/
-env.cshrc
-
-# ==============================
-# TerosHDL
-# ==============================
-.teroshdl/
-!.teroshdl/.gitkeep
-
-# ==============================
-# Synopsys VCS
-# ==============================
-simv
-simv.daidir/
 simv_*
+*.daidir/
 csrc/
-ucli.key
-DVEfiles/
-vc_hdrs.h
-
-# ==============================
-# Verdi
-# ==============================
-novas_dump.log
-novas.conf
-novas.rc
-verdiLog/
-VerdiLog/
-
-# ==============================
-# Simulation output / waveforms
-# ==============================
-*.vcd
-*.vpd
 *.fsdb
-*.wlf
-*.shm/
-*.trn
-*.dsn
-
-# ==============================
-# Logs
-# ==============================
+*.vpd
 *.log
-
-# ==============================
-# Synopsys / synthesis
-# ==============================
-*.svf
-default.svf
-*.spef
-*.sdf
+ucli.key
+synth/reports/
 *.ddc
-*.syn
-*.mr
-*.pvl
-
-# ==============================
-# Common EDA work libraries
-# ==============================
-WORK/
-work/
-alib-*/
-
-# ==============================
-# Temporary files
-# ==============================
-*.tmp
-*.bak
-*.old
-*.swp
-
-# ==============================
-# Coverage
-# ==============================
-*.ucdb
-*.cov
-coverage/
+*.svf

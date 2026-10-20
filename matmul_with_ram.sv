@@ -1,69 +1,81 @@
-`timescale 1ns/1ns
-
-//Design with memories
-module matrix_multiplication
+`timescale 1ns/1ps
+// Part 3 top-level, retaining the Part II start/done control interface.
+// The six RAM banks are 32-bit dual-port memories of four FP8 lanes each.
+// Port 0 is used by the accelerator, port 1 by an external host/testbench.
+module matrix_multiplication_8x8
     import matmul_pkg::*;
 (
     input  logic                         clk,
-    input  logic                         resetn,
-    input  logic                         pe_resetn,
+    input  logic                         resetn, pe_resetn,
     input  logic [AWIDTH-1:0]            address_mat_a, address_mat_b, address_mat_c,
     input  logic [ADDR_STRIDE_WIDTH-1:0] address_stride_a, address_stride_b, address_stride_c,
-    input  logic [AWIDTH-1:0]            bram_addr_a_ext,
-    output vec_t                         bram_rdata_a_ext,
-    input  vec_t                         bram_wdata_a_ext,
-    input  logic [MASK_WIDTH-1:0]        bram_we_a_ext,
-    input  logic [AWIDTH-1:0]            bram_addr_b_ext,
-    output vec_t                         bram_rdata_b_ext,
-    input  vec_t                         bram_wdata_b_ext,
-    input  logic [MASK_WIDTH-1:0]        bram_we_b_ext,
-    input  logic [AWIDTH-1:0]            bram_addr_c_ext,
-    output vec_t                         bram_rdata_c_ext,
-    input  vec_t                         bram_wdata_c_ext,
-    input  logic [MASK_WIDTH-1:0]        bram_we_c_ext,
-    input  logic                         start, //starts the matmul operation
-    output logic                         done,   //asserts when matmul operation is complete
-    output logic [4:0]                   exception_flags
+    input  logic                         start,
+    output logic                         done,
+    output logic [4:0]                   exception_flags,
+    // External port-1 interface for A0 and A1 (rows 0..3, rows 4..7)
+    input  logic [AWIDTH-1:0]            bram_addr_a0_ext, bram_addr_a1_ext,
+    input  vec_t                         bram_wdata_a0_ext, bram_wdata_a1_ext,
+    input  logic [MASK_WIDTH-1:0]        bram_we_a0_ext, bram_we_a1_ext,
+    output vec_t                         bram_rdata_a0_ext, bram_rdata_a1_ext,
+    // External port-1 interface for B0 and B1 (cols 0..3, cols 4..7)
+    input  logic [AWIDTH-1:0]            bram_addr_b0_ext, bram_addr_b1_ext,
+    input  vec_t                         bram_wdata_b0_ext, bram_wdata_b1_ext,
+    input  logic [MASK_WIDTH-1:0]        bram_we_b0_ext, bram_we_b1_ext,
+    output vec_t                         bram_rdata_b0_ext, bram_rdata_b1_ext,
+    // External port-1 interface for C0 and C1 (rows 0..3, rows 4..7)
+    input  logic [AWIDTH-1:0]            bram_addr_c0_ext, bram_addr_c1_ext,
+    input  vec_t                         bram_wdata_c0_ext, bram_wdata_c1_ext,
+    input  logic [MASK_WIDTH-1:0]        bram_we_c0_ext, bram_we_c1_ext,
+    output vec_t                         bram_rdata_c0_ext, bram_rdata_c1_ext
 );
+    logic reset, pe_reset;
+    assign reset    = ~resetn;
+    assign pe_reset = ~pe_resetn;
 
-    logic [AWIDTH-1:0]     bram_addr_a, bram_addr_b, bram_addr_c;
-    vec_t                  bram_rdata_a, bram_rdata_b, bram_wdata_c;
-    logic [MASK_WIDTH-1:0] bram_we_c;
+    logic [AWIDTH-1:0] addr_a0, addr_a1, addr_b0, addr_b1, addr_c0, addr_c1;
+    vec_t rdata_a0, rdata_a1, rdata_b0, rdata_b1;
+    vec_t wdata_c0, wdata_c1;
+    logic c_data_available;
+    logic [MASK_WIDTH-1:0] we_c;
+    assign we_c = {MASK_WIDTH{c_data_available}};
 
-    // Port 0 connects to the matmul; port 1 connects to the external interface.
-    // addr, d, we, and q are the address, write data, write enable, and read data.
-    // The matmul only reads RAMs A and B, so their port-0 write inputs are tied low.
-    // It writes RAM C through port 0 when c_data is available.
-    ////////////////////////////////////////////////////////////////
-    // RAM matrix A
-    ////////////////////////////////////////////////////////////////
-    ram matrix_A (.clk, .addr0(bram_addr_a), .d0('0), .we0('0), .q0(bram_rdata_a),
-                  .addr1(bram_addr_a_ext), .d1(bram_wdata_a_ext), .we1(bram_we_a_ext), .q1(bram_rdata_a_ext));
+    ram matrix_A0 (
+        .clk(clk), .addr0(addr_a0), .d0('0), .we0('0), .q0(rdata_a0),
+        .addr1(bram_addr_a0_ext), .d1(bram_wdata_a0_ext),
+        .we1(bram_we_a0_ext), .q1(bram_rdata_a0_ext)
+    );
+    ram matrix_A1 (
+        .clk(clk), .addr0(addr_a1), .d0('0), .we0('0), .q0(rdata_a1),
+        .addr1(bram_addr_a1_ext), .d1(bram_wdata_a1_ext),
+        .we1(bram_we_a1_ext), .q1(bram_rdata_a1_ext)
+    );
+    ram matrix_B0 (
+        .clk(clk), .addr0(addr_b0), .d0('0), .we0('0), .q0(rdata_b0),
+        .addr1(bram_addr_b0_ext), .d1(bram_wdata_b0_ext),
+        .we1(bram_we_b0_ext), .q1(bram_rdata_b0_ext)
+    );
+    ram matrix_B1 (
+        .clk(clk), .addr0(addr_b1), .d0('0), .we0('0), .q0(rdata_b1),
+        .addr1(bram_addr_b1_ext), .d1(bram_wdata_b1_ext),
+        .we1(bram_we_b1_ext), .q1(bram_rdata_b1_ext)
+    );
+    ram matrix_C0 (
+        .clk(clk), .addr0(addr_c0), .d0(wdata_c0), .we0(we_c), .q0(),
+        .addr1(bram_addr_c0_ext), .d1(bram_wdata_c0_ext),
+        .we1(bram_we_c0_ext), .q1(bram_rdata_c0_ext)
+    );
+    ram matrix_C1 (
+        .clk(clk), .addr0(addr_c1), .d0(wdata_c1), .we0(we_c), .q0(),
+        .addr1(bram_addr_c1_ext), .d1(bram_wdata_c1_ext),
+        .we1(bram_we_c1_ext), .q1(bram_rdata_c1_ext)
+    );
 
-    ////////////////////////////////////////////////////////////////
-    // RAM matrix B
-    ////////////////////////////////////////////////////////////////
-    ram matrix_B (.clk, .addr0(bram_addr_b), .d0('0), .we0('0), .q0(bram_rdata_b),
-                  .addr1(bram_addr_b_ext), .d1(bram_wdata_b_ext), .we1(bram_we_b_ext), .q1(bram_rdata_b_ext));
-
-    ////////////////////////////////////////////////////////////////
-    // RAM matrix C
-    ////////////////////////////////////////////////////////////////
-    ram matrix_C (.clk, .addr0(bram_addr_c), .d0(bram_wdata_c), .we0(bram_we_c), .q0(),
-                  .addr1(bram_addr_c_ext), .d1(bram_wdata_c_ext), .we1(bram_we_c_ext), .q1(bram_rdata_c_ext));
-
-    //fsm to start matmul
-    typedef enum logic [3:0] {
-        IDLE      = 4'b0000,
-        START     = 4'b0001,
-        WAIT_DONE = 4'b1010
-    } state_t;
-
+    typedef enum logic [1:0] {IDLE, START, WAIT_DONE} state_t;
     state_t state;
-    logic   start_mat_mul, done_mat_mul;
+    logic start_mat_mul, done_mat_mul;
 
     always_ff @(posedge clk) begin
-        if (!resetn) begin
+        if (reset) begin
             state         <= IDLE;
             start_mat_mul <= 1'b0;
         end else begin
@@ -76,53 +88,35 @@ module matrix_multiplication
                     start_mat_mul <= 1'b1;
                     state         <= WAIT_DONE;
                 end
-                WAIT_DONE: begin
-                    if (done_mat_mul) begin
-                        start_mat_mul <= 1'b0;
-                        state         <= IDLE;
-                    end
+                WAIT_DONE: if (done_mat_mul) begin
+                    start_mat_mul <= 1'b0;
+                    state         <= IDLE;
                 end
                 default: state <= IDLE;
             endcase
         end
     end
-
     assign done = done_mat_mul;
 
-    logic c_data_available;
-    assign bram_we_c = {MASK_WIDTH{c_data_available}};
-
-    logic reset, pe_reset;
-    assign reset    = ~resetn;
-    assign pe_reset = ~pe_resetn;
-
-//matmul instance
-    matmul_4x4_systolic u_matmul_4x4 (
-        .*,  //clk, reset, pe_reset, start_mat_mul, done_mat_mul, address_mat_*, address_stride_*, c_data_available
-        .a_data(bram_rdata_a),
-        .b_data(bram_rdata_b),
-        .a_data_in('0),  //not used: this matmul is the only block (a_loc = b_loc = 0)
-        .b_data_in('0),
-        .c_data_in('0),
-        .c_data_out(bram_wdata_c),
-        .a_data_out(),
-        .b_data_out(),
-        .a_addr(bram_addr_a),
-        .b_addr(bram_addr_b),
-        .c_addr(bram_addr_c),
-        .validity_mask_a_rows('1),
-        .validity_mask_a_cols_b_rows('1),
-        .validity_mask_b_cols('1),
-        .final_mat_mul_size(8'd4),
-        .a_loc(8'd0),
-        .b_loc(8'd0)
+    matmul_8x8_systolic u_matmul_8x8 (
+        .clk(clk), .reset(reset), .pe_reset(pe_reset),
+        .start_mat_mul(start_mat_mul), .done_mat_mul(done_mat_mul),
+        .exception_flags(exception_flags),
+        .address_mat_a(address_mat_a), .address_mat_b(address_mat_b),
+        .address_mat_c(address_mat_c),
+        .address_stride_a(address_stride_a), .address_stride_b(address_stride_b),
+        .address_stride_c(address_stride_c),
+        .a_data_0(rdata_a0), .a_data_1(rdata_a1),
+        .b_data_0(rdata_b0), .b_data_1(rdata_b1),
+        .c_data_0(wdata_c0), .c_data_1(wdata_c1),
+        .a_addr_0(addr_a0), .a_addr_1(addr_a1),
+        .b_addr_0(addr_b0), .b_addr_1(addr_b1),
+        .c_addr_0(addr_c0), .c_addr_1(addr_c1),
+        .c_data_available(c_data_available)
     );
-
 endmodule
 
-//////////////////////////////////
-//Dual port RAM
-//////////////////////////////////
+// Identical dual-port synchronous-read RAM model from the supplied Part II.
 module ram
     import matmul_pkg::*;
 (
