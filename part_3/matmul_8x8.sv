@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Lab 3, Part 3: An 8x8 E3M4 matrix multiplier
+// An 8x8 E3M4 matrix multiplier
 // matmul_4x4_systolic blocks in ../matmul.sv.
 //
 //                B0 (cols 0..3)    B1 (cols 4..7)
@@ -12,11 +12,11 @@
 // On output, each right tile shifts four C columns to its left neighbor.
 // TL and BL each produce 8 successive 32-bit output columns, one per row bank.
 //
-// NOTE: The 4x4 tiles' done_mat_mul pulse is hardcoded for 4x4. Their output
-// latch time *does* depend on final_mat_mul_size. We intentionally IGNORE
-// tile done and terminate after the 8th actual C RAM write. Likewise, we
-// generate the C write address ourselves because the early tile-done pulse
-// disturbs the tile-internal c_addr prior to the 8x8 latch event.
+// Tile done pulses are fixed for 4x4, but output latching follows
+// final_mat_mul_size. Ignore tile done and stop after eight C writes. Generate
+// C addresses externally because the early done pulse disturbs tile c_addr.
+//
+// Clear PE accumulators at each operation start; back-to-back runs need no pe_reset pulse.
 module matmul_8x8_systolic
     import matmul_pkg::*;
 (
@@ -49,81 +49,60 @@ module matmul_8x8_systolic
     logic [3:0] c_write_count;  // valid values 0..8
     logic [AWIDTH-1:0] c_write_address;
     logic write_c;
+    logic pe_clear;
 
     assign flags_cycle = flags_tl | flags_tr | flags_bl | flags_br;
 
-    // A 4x4 tile asserts its native done too early for an 8x8 computation.
-    // All tile done and tile c_addr signals are therefore left unconnected.
-    // Shared address, stride and mask inputs are IDENTICAL on all four tiles.
+    // Clear PE accumulators when a new operation starts; no operands are consumed
+    // that cycle, preventing accumulation of results from the previous operation.
+    assign pe_clear = pe_reset | (start_mat_mul & ~running_d);
+
+    // Tile done and c_addr are unused; all tiles share addresses, strides, and masks.
     matmul_4x4_systolic u_tl (
-        .clk(clk), .reset(reset), .pe_reset(pe_reset),
-        .start_mat_mul(start_mat_mul), .done_mat_mul(),
-        .exception_flags(flags_tl),
-        .address_mat_a(address_mat_a), .address_mat_b(address_mat_b),
-        .address_mat_c(address_mat_c),
-        .address_stride_a(address_stride_a), .address_stride_b(address_stride_b),
-        .address_stride_c(address_stride_c),
+        .*,  // clk, reset, start_mat_mul, address_mat_*, address_stride_*
+        .pe_reset(pe_clear), .done_mat_mul(), .exception_flags(flags_tl),
         .a_data(a_data_0), .b_data(b_data_0),
         .a_data_in('0), .b_data_in('0), .c_data_in(c_tr_tl),
         .a_data_out(a_tl_tr), .b_data_out(b_tl_bl), .c_data_out(c_data_0),
         .a_addr(a_addr_0), .b_addr(b_addr_0), .c_addr(),
         .c_data_available(c_available_tl),
-        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1),
-        .validity_mask_b_cols('1),
+        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1), .validity_mask_b_cols('1),
         .final_mat_mul_size(8'd8), .a_loc(8'd0), .b_loc(8'd0)
     );
 
     matmul_4x4_systolic u_tr (
-        .clk(clk), .reset(reset), .pe_reset(pe_reset),
-        .start_mat_mul(start_mat_mul), .done_mat_mul(),
-        .exception_flags(flags_tr),
-        .address_mat_a(address_mat_a), .address_mat_b(address_mat_b),
-        .address_mat_c(address_mat_c),
-        .address_stride_a(address_stride_a), .address_stride_b(address_stride_b),
-        .address_stride_c(address_stride_c),
+        .*,  // clk, reset, start_mat_mul, address_mat_*, address_stride_*
+        .pe_reset(pe_clear), .done_mat_mul(), .exception_flags(flags_tr),
         .a_data('0), .b_data(b_data_1),
         .a_data_in(a_tl_tr), .b_data_in('0), .c_data_in('0),
         .a_data_out(), .b_data_out(b_tr_br), .c_data_out(c_tr_tl),
         .a_addr(), .b_addr(b_addr_1), .c_addr(),
         .c_data_available(),
-        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1),
-        .validity_mask_b_cols('1),
+        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1), .validity_mask_b_cols('1),
         .final_mat_mul_size(8'd8), .a_loc(8'd0), .b_loc(8'd1)
     );
 
     matmul_4x4_systolic u_bl (
-        .clk(clk), .reset(reset), .pe_reset(pe_reset),
-        .start_mat_mul(start_mat_mul), .done_mat_mul(),
-        .exception_flags(flags_bl),
-        .address_mat_a(address_mat_a), .address_mat_b(address_mat_b),
-        .address_mat_c(address_mat_c),
-        .address_stride_a(address_stride_a), .address_stride_b(address_stride_b),
-        .address_stride_c(address_stride_c),
+        .*,  // clk, reset, start_mat_mul, address_mat_*, address_stride_*
+        .pe_reset(pe_clear), .done_mat_mul(), .exception_flags(flags_bl),
         .a_data(a_data_1), .b_data('0),
         .a_data_in('0), .b_data_in(b_tl_bl), .c_data_in(c_br_bl),
         .a_data_out(a_bl_br), .b_data_out(), .c_data_out(c_data_1),
         .a_addr(a_addr_1), .b_addr(), .c_addr(),
         .c_data_available(c_available_bl),
-        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1),
-        .validity_mask_b_cols('1),
+        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1), .validity_mask_b_cols('1),
         .final_mat_mul_size(8'd8), .a_loc(8'd1), .b_loc(8'd0)
     );
 
     matmul_4x4_systolic u_br (
-        .clk(clk), .reset(reset), .pe_reset(pe_reset),
-        .start_mat_mul(start_mat_mul), .done_mat_mul(),
-        .exception_flags(flags_br),
-        .address_mat_a(address_mat_a), .address_mat_b(address_mat_b),
-        .address_mat_c(address_mat_c),
-        .address_stride_a(address_stride_a), .address_stride_b(address_stride_b),
-        .address_stride_c(address_stride_c),
+        .*,  // clk, reset, start_mat_mul, address_mat_*, address_stride_*
+        .pe_reset(pe_clear), .done_mat_mul(), .exception_flags(flags_br),
         .a_data('0), .b_data('0),
         .a_data_in(a_bl_br), .b_data_in(b_tr_br), .c_data_in('0),
         .a_data_out(), .b_data_out(), .c_data_out(c_br_bl),
         .a_addr(), .b_addr(), .c_addr(),
         .c_data_available(),
-        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1),
-        .validity_mask_b_cols('1),
+        .validity_mask_a_rows('1), .validity_mask_a_cols_b_rows('1), .validity_mask_b_cols('1),
         .final_mat_mul_size(8'd8), .a_loc(8'd1), .b_loc(8'd1)
     );
 
@@ -150,9 +129,8 @@ module matmul_8x8_systolic
                 c_write_address <= address_mat_c;
                 // Preserve exception_flags for post-operation software reads.
             end else begin
-                // Clear only when a NEW operation begins. Accumulate across
-                // all tiles and all cycles so transitory faults are preserved.
-                if (!running_d) exception_flags <= flags_cycle;
+                // Clear flags on a new operation; otherwise accumulate faults across tiles and cycles.
+                if (!running_d) exception_flags <= '0;
                 else            exception_flags <= exception_flags | flags_cycle;
 
                 if (write_c) begin

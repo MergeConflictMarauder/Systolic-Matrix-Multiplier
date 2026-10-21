@@ -2,10 +2,6 @@
 
 //////////////////////////////////////////////////////////////////////////////////
 //
-// Module Name:    FP8_Mult
-// Project Name:   Systolic Matrix Multiplier
-// Based on:       FPMult (DSP48E1-FP-master/src/FPMult) by Fredrik Brosser
-//
 // Description:    Combinational multiplier for FP8 E3M4 numbers.
 //                 Same stage breakdown as the 32-bit FPMult (Prep, Execute,
 //                 Normalize, Round, Exception), with the pipeline registers removed.

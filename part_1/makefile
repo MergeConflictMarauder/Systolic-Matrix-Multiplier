@@ -10,6 +10,9 @@ RTL       = FP8_AddSub.sv \
 
 TB        = FP8_tb.v
 
+# The testbench includes the shared reference model ../fp8_ref_model.vh
+INCDIR    = +incdir+..
+
 .PHONY: all compile run waves clean
 
 # Default: compile the waveform simulation
@@ -17,7 +20,7 @@ all: compile
 
 # Compile the design and testbench
 compile:
-	$(VCS) $(VCS_FLAGS) -top $(TOP) $(RTL) $(TB) -o $(SIM)
+	$(VCS) $(VCS_FLAGS) $(INCDIR) -top $(TOP) $(RTL) $(TB) -o $(SIM)
 
 # Run the simulation and save terminal output
 run: compile
@@ -26,7 +29,7 @@ run: compile
 # Run the simulation and open the waveform in Verdi
 waves: compile
 	./$(SIM) -exitstatus 2>&1 | tee simulation.log
-	verdi -dbdir $(SIM).daidir -ssf $(FSDB) -sswr signal.rc &
+	verdi -dbdir $(SIM).daidir -ssf $(FSDB) &
 
 # Remove generated simulation and waveform files
 clean:
