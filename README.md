@@ -12,7 +12,7 @@ A systolic-array matrix multiplier built on FP8 (E3M4) arithmetic: a 4x4 array, 
 ## Requirements
 
 Synopsys **VCS** (to compile and simulate) and **Verdi** (to view waveforms) must be on your `PATH`.
-Part 3 synthesis also needs **Design Compiler** (`dc_shell`) and a standard-cell `.db` library.
+Part 3 synthesis also needs **Design Compiler** (`dc_shell-t`) and the OSU FreePDK 45nm library (`PDK_DIR` set).
 
 ## Part 1: FP8 adder and multiplier
 
@@ -69,9 +69,9 @@ Both tests check all 64 elements of C and the exception flags against a referenc
 **Synthesis** (8x8 array only, no RAMs or control logic):
 
 ```bash
-export TARGET_LIB=/path/to/standard_cells.db   # course-supplied library
-export CLOCK_NS=10                             # optional, default 10 ns
-make synth                                     # reports go to synth/reports/
+export PDK_DIR=/path/to/FreePDK45   # usually set by the course environment
+make synth                          # 1000 MHz target; reports go to synth/reports/
+CLK_MHZ=500 make synth              # try a different target clock
 ```
 
 ## Part 4: APB slave interface
@@ -115,5 +115,5 @@ Each test checks all 64 elements of C against the same reference model as part 3
 | `make run normal` (part 2) | `normal_simulation.log` | `normal_fp8.fsdb` |
 | `make run exception` (part 2) | `exception_simulation.log` | `exception_fp8.fsdb` |
 | `make run <test>` / `make waves <test>` (part 3) | `<test>_simulation.log` | `<test>_fp8.fsdb` |
-| `make synth` (part 3) | `synth.log` | Reports in `synth/reports/` |
+| `make synth` (part 3) | `synth/synth.log` | Reports in `synth/reports/`, netlist in `synth/matmul_8x8_systolic.ddc` |
 | `make run <test>` / `make waves <test>` (part 4) | `<test>_simulation.log` | `<test>_apb.fsdb` |

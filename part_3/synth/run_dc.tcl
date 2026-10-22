@@ -1,44 +1,192 @@
-# Generic Synopsys Design Compiler starting point for Lab 3 Part III.
-# Synthesizes only the 8x8 array (no RAMs or start/done control).
-# Run from part_3/ with a course-supplied technology library, for example:
-#   export TARGET_LIB=/path/to/standard_cells.db
-#   export DESIGN_TOP=matmul_8x8_systolic   # optional, or matmul_4x4_systolic
-#   export CLOCK_NS=10                      # optional, default 10 ns
-#   make synth                              # or: dc_shell -f synth/run_dc.tcl
-# NOTE: Actual synthesis requires a standard-cell .db library, provided
-# by the course/EDA environment. This file is a template, NOT a report.
+# /**************************************************/
+# /* Design Compiler synthesis script               */
+# /* 8x8 FP8 systolic matrix multiplier (part 3)    */
+# /*                                                */
+# /* Synthesizes only matmul_8x8_systolic: the four */
+# /* 4x4 arrays and the 8x8 sequencing logic, not   */
+# /* the RAMs or the start/done control FSM.        */
+# /*                                                */
+# /* Run from part_3/:                              */
+# /*   make synth                                   */
+# /* or from part_3/synth/:                         */
+# /*   dc_shell-t -f run_dc.tcl                     */
+# /*                                                */
+# /* OSU FreePDK 45nm (needs PDK_DIR set)           */
+# /**************************************************/
 
-if {![info exists ::env(TARGET_LIB)]} {
-    error "Missing TARGET_LIB. Set this to the path to your course .db library."
-}
-set top matmul_8x8_systolic
-if {[info exists ::env(DESIGN_TOP)]} {set top $::env(DESIGN_TOP)}
-if {$top ne "matmul_8x8_systolic" && $top ne "matmul_4x4_systolic"} {
-    error "DESIGN_TOP must be matmul_4x4_systolic or matmul_8x8_systolic"
-}
-set period 10.0
-if {[info exists ::env(CLOCK_NS)]} {set period $::env(CLOCK_NS)}
-set_app_var target_library [list $::env(TARGET_LIB)]
-set_app_var link_library [concat "*" $target_library]
 
-# The package must be analyzed first
-set rtl [list ../matmul_pkg.sv ../part_1/FP8_AddSub.sv ../part_1/FP8_Mult.sv ../matmul.sv]
-if {$top eq "matmul_8x8_systolic"} {lappend rtl matmul_8x8.sv}
-analyze -format sverilog $rtl
-elaborate $top
-current_design $top
+# User/project-specific settings
+
+# RTL source files, relative to part_3/synth/.
+# matmul_pkg.sv must come first because the other files
+# import its package.
+set my_verilog_files [list \
+    ../../matmul_pkg.sv \
+    ../../part_1/FP8_AddSub.sv \
+    ../../part_1/FP8_Mult.sv \
+    ../../matmul.sv \
+    ../matmul_8x8.sv \
+]
+
+# RTL top-level module
+set my_toplevel matmul_8x8_systolic
+
+# Clock port name (the design has a single clock)
+set my_clock_pin clk
+
+# Starting target frequency.
+# This is a synthesis target, not necessarily the final Fmax.
+# Start here and adjust upward when checking timing.
+# Can be overridden from the environment: CLK_MHZ=500 make synth
+set my_clk_freq_MHz 1000
+if {[info exists ::env(CLK_MHZ)]} {
+    set my_clk_freq_MHz $::env(CLK_MHZ)
+}
+
+# Optional external input/output delay assumptions
+set my_input_delay_ns  0.1
+set my_output_delay_ns 0.1
+
+
+#/**************************************************/
+#/* No modifications needed below                  */
+#/**************************************************/
+
+# OSU FreePDK 45nm library
+set OSU_FREEPDK [format "%s%s" \
+    [getenv "PDK_DIR"] \
+    "/osu_soc/lib/files"]
+
+set search_path [concat $search_path $OSU_FREEPDK]
+set alib_library_analysis_path $OSU_FREEPDK
+
+set link_library [concat \
+    [list gscl45nm.db] \
+    [list dw_foundation.sldb]]
+
+set target_library "gscl45nm.db"
+
+define_design_lib WORK -path ./WORK
+
+set verilogout_show_unconnected_pins true
+
+set_ultra_optimization true
+set_ultra_optimization -force
+
+
+# Read RTL
+
+analyze -format sverilog $my_verilog_files
+
+elaborate $my_toplevel
+
+current_design $my_toplevel
+
 link
-check_design
-create_clock -name core_clk -period $period [get_ports clk]
-set_clock_uncertainty 0.1 [get_clocks core_clk]
-# I/O constraints are provisional: use your instructor's constraints if given.
-set_input_delay 0.2 -clock core_clk [remove_from_collection [all_inputs] [get_ports clk]]
-set_output_delay 0.2 -clock core_clk [all_outputs]
-compile_ultra
+uniquify
 
-file mkdir synth/reports
-redirect -file synth/reports/${top}_area.txt { report_area -hierarchy }
-redirect -file synth/reports/${top}_timing.txt { report_timing -delay_type max -max_paths 10 }
-redirect -file synth/reports/${top}_qor.txt { report_qor }
-puts "Completed synthesis of $top with period ${period} ns."
-puts "Reports are in synth/reports; verify paths/constraints before quoting Fmax."
+
+# Clock definition
+
+set my_period [expr 1000.0 / $my_clk_freq_MHz]
+
+create_clock \
+    -name CLK \
+    -period $my_period \
+    [get_ports $my_clock_pin]
+
+
+# Driving cell
+set_driving_cell -lib_cell INVX1 [all_inputs]
+
+
+# Input/output timing assumptions
+
+# Every port except the clock belongs to the single CLK domain.
+# reset and pe_reset are synchronous resets (sampled on posedge clk),
+# so unlike an asynchronous reset they are timed like any other input.
+set my_inputs  [remove_from_collection [all_inputs] [get_ports $my_clock_pin]]
+set my_outputs [all_outputs]
+
+set_input_delay \
+    $my_input_delay_ns \
+    -clock CLK \
+    $my_inputs
+
+set_output_delay \
+    $my_output_delay_ns \
+    -clock CLK \
+    $my_outputs
+
+
+# Synthesis
+
+compile -ungroup_all -map_effort medium
+
+compile -incremental_mapping -map_effort medium
+
+
+# Checks
+
+check_design
+
+check_timing
+
+report_constraint -all_violators
+
+
+# Create report directory
+file mkdir reports
+
+
+# Timing reports
+redirect reports/timing.rep {
+    report_timing \
+        -delay_type max \
+        -max_paths 10
+}
+
+# Clock information
+redirect reports/clocks.rep {
+    report_clocks
+}
+
+# Constraint information
+redirect reports/constraints.rep {
+    report_constraint -all_violators
+}
+
+# Timing sanity check
+redirect reports/check_timing.rep {
+    check_timing
+}
+
+
+# Area
+
+redirect reports/area.rep {
+    report_area
+}
+
+redirect reports/area_hierarchy.rep {
+    report_area -hierarchy
+}
+
+
+# Power
+redirect reports/power.rep {
+    report_power
+}
+
+
+# Save synthesized design
+set filename [format "%s%s" $my_toplevel ".ddc"]
+write -format ddc -hierarchy -output $filename
+
+set filename [format "%s%s" $my_toplevel ".sdc"]
+write_sdc $filename
+
+
+
+# Finish
+quit

@@ -1,5 +1,6 @@
 VCS       = vcs
 VCS_FLAGS = -sverilog -full64 -kdb -debug_access+all
+DC        = dc_shell-t
 TOP       = matmul_tb
 
 # Usage: make <compile|run|waves> <ones|random>
@@ -70,18 +71,22 @@ run_all: compile
 	done; \
 	exit $$status
 
-# Synthesize only the 8x8 array with Design Compiler (needs TARGET_LIB, see synth/run_dc.tcl)
+# Synthesize only the 8x8 array with Design Compiler and FreePDK 45nm (needs PDK_DIR).
+# Runs inside synth/; reports go to synth/reports/, the netlist to synth/*.ddc.
+# Target clock: 1000 MHz by default, override with e.g. CLK_MHZ=500 make synth
 synth:
-	@test -n "$$TARGET_LIB" || { echo "Set TARGET_LIB to your standard-cell .db library first"; exit 1; }
-	dc_shell -f synth/run_dc.tcl 2>&1 | tee synth.log
+	@test -n "$$PDK_DIR" || { echo "Set PDK_DIR to the FreePDK 45nm install (see synth/run_dc.tcl)"; exit 1; }
+	cd synth && $(DC) -f run_dc.tcl 2>&1 | tee synth.log
 
 # `ones` and `random` only select the test. Given alone, they compile.
 $(TESTS): $(if $(filter $(ACTIONS),$(MAKECMDGOALS)),,compile)
 	@:
 
 # Remove generated simulation, waveform and synthesis scratch files
+# (synthesis results in synth/reports/, synth/*.ddc and synth/*.sdc are kept)
 clean:
 	rm -rf $(SIM) $(SIM).daidir $(SIM_WAVES) $(SIM_WAVES).daidir \
 	       csrc ucli.key DVEfiles novas_dump.log verdiLog \
 	       *_fp8.fsdb *_simulation.log *.vpd \
-	       synth.log command.log filenames.log default.svf WORK alib-*
+	       synth/synth.log synth/command.log synth/filenames.log \
+	       synth/default.svf synth/WORK synth/alib-*
