@@ -11,6 +11,7 @@ A systolic-array matrix multiplier built on FP8 (E3M4) arithmetic: a 4x4 array, 
 | `part_3_8x8/` | 8x8 matrix multiplier built from four 4x4 arrays (`rtl/`), its testbench (`tb/`) and synthesis script and reports (`synth/`) |
 | `part_4_apb/` | The 8x8 multiplier with an APB slave interface in place of the start/done control (`rtl/`), with its testbench (`tb/`) |
 | `examples/` | Example testbenches provided with the course |
+| `demo/` | One testbench that demonstrates all four parts in a single short simulation |
 
 Each part has its own `makefile`; run the commands below from inside that part's folder.
 
@@ -110,6 +111,17 @@ make clean              # delete generated files
 
 Each test checks all 64 elements of C against expected values worked out by hand, and the FLAGS value read over APB against the expected flags. If no test is named, `exception` is used.
 
+## Demo: all parts in one simulation
+
+`demo/` runs a short walkthrough of every part in a single simulation (about 2 µs of simulated time): the FP8 adder and multiplier on 5 input pairs (part 1), then an 8x8 multiply controlled over APB (parts 3 and 4) whose data overflows inside a PE, so the exception flags reach the top level (part 2) and are read back through the FLAGS register. Every result is checked, and the log ends with a timeline of when each step happens, for placing waveform cursors.
+
+```bash
+cd demo
+make run      # compile, simulate, save the output to simulation.log
+make waves    # simulate with waveform dumping and open demo.fsdb in Verdi
+make clean    # delete generated files
+```
+
 ### Output files
 
 Paths are relative to the part's folder.
@@ -122,3 +134,4 @@ Paths are relative to the part's folder.
 | `make run <test>` / `make waves <test>` (part 3) | `<test>_simulation.log` | `<test>_fp8.fsdb` |
 | `make synth` (part 3) | `synth/synth.log` | Reports in `synth/reports/`, netlist in `synth/matmul_8x8_systolic.ddc` |
 | `make run <test>` / `make waves <test>` (part 4) | `<test>_simulation.log` | `<test>_apb.fsdb` |
+| `make run` / `make waves` (demo) | `simulation.log` | `demo.fsdb` |
