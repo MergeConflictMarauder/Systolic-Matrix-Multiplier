@@ -24,12 +24,9 @@ module matmul_tb;
     integer          seed;
     reg [8*16-1:0]   test_name;
 
-    reg  [7:0] mat_a [0:7][0:7];                // A[row][k]
-    reg  [7:0] mat_b [0:7][0:7];                // B[k][col]
-    reg  [7:0] exp_c [0:7][0:7];                // Expected C[row][col]
-    reg  [4:0] exp_flags;                       // Expected exception flags
-
-    integer runs, errors;
+    // Matrices, expected results, RAM addresses and the shared load/check
+    // tasks (shared with part_4, see ../matmul_8x8_test_utils.vh)
+`include "matmul_8x8_test_utils.vh"
 
     //////////////////////////////////////////////////////////////////////
     // DUT
@@ -38,12 +35,12 @@ module matmul_tb;
         .clk              (clk),
         .resetn           (resetn),
         .pe_resetn        (pe_resetn),
-        .address_mat_a    (10'd0),
-        .address_mat_b    (10'd0),
-        .address_mat_c    (10'd0),
-        .address_stride_a (8'd1),
-        .address_stride_b (8'd1),
-        .address_stride_c (8'd1),
+        .address_mat_a    (addr_a),
+        .address_mat_b    (addr_b),
+        .address_mat_c    (addr_c),
+        .address_stride_a (stride_a),
+        .address_stride_b (stride_b),
+        .address_stride_c (stride_c),
         .start            (start),
         .done             (done),
         .exception_flags  (exception_flags),
@@ -142,31 +139,8 @@ module matmul_tb;
     endtask
 
     //////////////////////////////////////////////////////////////////////
-    // Load the RAMs, run one multiplication and check C
+    // Run one multiplication (load_rams and the checks are in the include)
     //////////////////////////////////////////////////////////////////////
-    task load_rams;
-        integer    k, lane;
-        reg [31:0] word_a0, word_a1, word_b0, word_b1;
-        begin
-            for (k = 0; k < 8; k = k + 1) begin
-                for (lane = 0; lane < 4; lane = lane + 1) begin
-                    word_a0[8*lane +: 8] = mat_a[lane][k];
-                    word_a1[8*lane +: 8] = mat_a[lane + 4][k];
-                    word_b0[8*lane +: 8] = mat_b[k][lane];
-                    word_b1[8*lane +: 8] = mat_b[k][lane + 4];
-                end
-                u_matmul.matrix_A0.ram[k] = word_a0;
-                u_matmul.matrix_A1.ram[k] = word_a1;
-                u_matmul.matrix_B0.ram[k] = word_b0;
-                u_matmul.matrix_B1.ram[k] = word_b1;
-
-                // Sentinel, so a missing C write is detected
-                u_matmul.matrix_C0.ram[k] = 32'hDEADBEEF;
-                u_matmul.matrix_C1.ram[k] = 32'hDEADBEEF;
-            end
-        end
-    endtask
-
     task run_matmul;
         begin
             @(negedge clk);
@@ -179,36 +153,6 @@ module matmul_tb;
             @(posedge done);
             repeat (3) @(negedge clk);
             runs = runs + 1;
-        end
-    endtask
-
-    task check_result;
-        input      show_c;      // Print every column of C
-        integer    i, j;
-        reg [31:0] word_c0, word_c1;
-        reg [7:0]  observed;
-        begin
-            for (j = 0; j < 8; j = j + 1) begin
-                word_c0 = u_matmul.matrix_C0.ram[j];
-                word_c1 = u_matmul.matrix_C1.ram[j];
-                if (show_c)
-                    $display("C col %0d: C0 = %h  C1 = %h", j, word_c0, word_c1);
-                for (i = 0; i < 8; i = i + 1) begin
-                    observed = (i < 4) ? word_c0[8*i +: 8] : word_c1[8*(i - 4) +: 8];
-                    if (observed !== exp_c[i][j]) begin
-                        if (errors < 10)
-                            $display("  MISMATCH (run %0d): C[%0d][%0d] = %h, expected %h",
-                                     runs, i, j, observed, exp_c[i][j]);
-                        errors = errors + 1;
-                    end
-                end
-            end
-            if (exception_flags !== exp_flags) begin
-                if (errors < 10)
-                    $display("  MISMATCH (run %0d): exception_flags = %b, expected %b",
-                             runs, exception_flags, exp_flags);
-                errors = errors + 1;
-            end
         end
     endtask
 
@@ -228,6 +172,10 @@ module matmul_tb;
         start     = 1'b0;
         runs      = 0;
         errors    = 0;
+
+        // A, B and C start at address 0 with stride 1
+        addr_a   = 10'd0;  addr_b   = 10'd0;  addr_c   = 10'd0;
+        stride_a = 8'd1;   stride_b = 8'd1;   stride_c = 8'd1;
 
         if (!$value$plusargs("TEST=%s", test_name)) test_name = "ones";
         if (!$value$plusargs("SEED=%d", seed))      seed = 1;
@@ -263,14 +211,16 @@ module matmul_tb;
                 compute_expected;
                 load_rams;
                 run_matmul;
-                check_result(1'b0);
+                check_c(1'b0);
+                check_flags(exception_flags);
             end
         end else begin
             set_ones_matrices;
             compute_expected;
             load_rams;
             run_matmul;
-            check_result(1'b1);
+            check_c(1'b1);
+            check_flags(exception_flags);
         end
 
         $display("%0d run(s), %0d mismatches, exception_flags = %b", runs, errors, exception_flags);

@@ -88,24 +88,22 @@ Every register is 16 bits wide and `PADDR` is the register index. `PREADY` is al
 | 4 / 5 / 6 | ADDR_A / ADDR_B / ADDR_C | [9:0] | R/W | RAM address of the first column of A, row of B, column of C. Reset value 0. |
 | 7 / 8 / 9 | STRIDE_A / STRIDE_B / STRIDE_C | [7:0] | R/W | Address step between columns of A, rows of B, columns of C. Reset value 1. |
 
-Unused bits and unmapped indices read as 0. The testbench drives the bus with the `write` and `read` tasks from `example_tb.v`: for each run it writes the addresses and strides, reads them back, writes START, polls DONE (`rdata[15]`), then reads FLAGS. Add the test name after the command:
+Unused bits and unmapped indices read as 0. The testbench drives the bus with the `write` and `read` tasks from `example_tb.v`: it writes the addresses and strides, writes START, polls DONE (`rdata[15]`), then reads FLAGS. Add the test name after the command:
 
 ```bash
 cd part_4
 make run exception      # compile and simulate one test
-make run random SEED=7  # random test with a different seed (default 1)
 make waves exception    # simulate and open the waveform in Verdi
-make run_all            # run all three tests and print a PASS/FAIL summary
+make run_all            # run both tests and print a PASS/FAIL summary
 make clean              # delete generated files
 ```
 
 | Test | What it checks |
 |---|---|
 | `ones` | A and B all 1.0 placed at nonzero addresses with strides 1, 2 and 3, so every element of C is 8.0 (`0x60`) and FLAGS is `00000`. |
-| `random` | 5 random FP8 matrix pairs run back to back, each at its own random addresses and strides. |
-| `exception` | A and B all 1.0 except A[0][0] = B[0][0] = 8.0. 8.0 x 8.0 overflows FP8, so C[0][0] is +infinity (`0x70`) and FLAGS reads `10001` (Overflow, Inexact). |
+| `exception` | A and B all 1.0 except A[0][0] = B[0][0] = 8.0, at the same addresses and strides. 8.0 x 8.0 overflows FP8, so C[0][0] is +infinity (`0x70`), the rest of row 0 and column 0 is 15.0 (`0x6E`), and FLAGS reads `10001` (Overflow, Inexact). |
 
-Each test checks all 64 elements of C against the same reference model as part 3, and the FLAGS value read over APB against the expected flags. If no test is named, `exception` is used.
+Each test checks all 64 elements of C against expected values worked out by hand, and the FLAGS value read over APB against the expected flags. If no test is named, `exception` is used.
 
 ### Output files
 

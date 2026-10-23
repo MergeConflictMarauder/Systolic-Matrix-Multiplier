@@ -28,7 +28,7 @@ TB        = matmul_with_ram_tb.v
 FSDB      = $(TEST)_fp8.fsdb
 LOG       = $(TEST)_simulation.log
 
-# The testbench includes the shared reference model ../fp8_ref_model.vh
+# The testbench includes ../fp8_ref_model.vh and ../matmul_8x8_test_utils.vh
 INCDIR    = +incdir+..
 
 # ../matmul_with_ram.sv is shared with part 2; MATMUL_8X8 selects its 8x8 top level
