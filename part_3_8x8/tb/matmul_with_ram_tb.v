@@ -25,7 +25,7 @@ module matmul_tb;
     reg [8*16-1:0]   test_name;
 
     // Matrices, expected results, RAM addresses and the shared load/check
-    // tasks (shared with part_4, see ../matmul_8x8_test_utils.vh)
+    // tasks (shared with part_4, see header_tb/matmul_8x8_test_utils.vh)
 `include "matmul_8x8_test_utils.vh"
 
     //////////////////////////////////////////////////////////////////////
@@ -63,7 +63,7 @@ module matmul_tb;
     end
 
     //////////////////////////////////////////////////////////////////////
-    // FP8 E3M4 reference model (shared with part_1, see ../fp8_ref_model.vh)
+    // FP8 E3M4 reference model (shared with part_1, see header_tb/fp8_ref_model.vh)
     //////////////////////////////////////////////////////////////////////
 `include "fp8_ref_model.vh"
 

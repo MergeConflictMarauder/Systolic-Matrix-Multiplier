@@ -4,10 +4,15 @@ A systolic-array matrix multiplier built on FP8 (E3M4) arithmetic: a 4x4 array, 
 
 | Folder | Contents |
 |---|---|
-| `part_1/` | FP8 adder/subtractor and multiplier, with their testbench |
-| `part_2/` | 4x4 systolic matrix multiplier using the FP8 units, with two testbenches |
-| `part_3/` | 8x8 matrix multiplier built from four 4x4 arrays, with its testbench and synthesis script |
-| `part_4/` | The 8x8 multiplier with an APB slave interface in place of the start/done control, with its testbench |
+| `rtl/` | Design shared by the parts: the package (`matmul_pkg.sv`), the 4x4 systolic array (`matmul.sv`), the top levels with RAMs (`matmul_with_ram.sv`), and the FP8 adder/subtractor and multiplier (`fp8/`) |
+| `header_tb/` | Testbench include files: the FP8 reference model and the 8x8 RAM load/check tasks |
+| `part_1_fp8/` | Testbench for the FP8 adder/subtractor and multiplier |
+| `part_2_4x4/` | Two testbenches for the 4x4 systolic matrix multiplier |
+| `part_3_8x8/` | 8x8 matrix multiplier built from four 4x4 arrays (`rtl/`), its testbench (`tb/`) and synthesis script and reports (`synth/`) |
+| `part_4_apb/` | The 8x8 multiplier with an APB slave interface in place of the start/done control (`rtl/`), with its testbench (`tb/`) |
+| `examples/` | Example testbenches provided with the course |
+
+Each part has its own `makefile`; run the commands below from inside that part's folder.
 
 ## Requirements
 
@@ -17,7 +22,7 @@ Part 3 synthesis also needs **Design Compiler** (`dc_shell-t`) and the OSU FreeP
 ## Part 1: FP8 adder and multiplier
 
 ```bash
-cd part_1
+cd part_1_fp8
 make run      # compile, simulate, save the output to simulation.log
 make waves    # compile, simulate, open the waveform in Verdi
 make clean    # delete generated files
@@ -30,7 +35,7 @@ make clean    # delete generated files
 Add the test name, `normal` or `exception`, after the command:
 
 ```bash
-cd part_2
+cd part_2_4x4
 make run normal         # compile and simulate the normal test
 make run exception      # compile and simulate the exception test
 make waves normal       # simulate and open the waveform in Verdi
@@ -48,10 +53,10 @@ If no test is named, `normal` is used. Naming both at once is an error.
 
 ## Part 3: 8x8 matrix multiplier
 
-Four 4x4 arrays are tiled into an 8x8 array (`matmul_8x8.sv`), with two RAMs per matrix. Its top level, `matrix_multiplication_8x8`, lives in the root `matmul_with_ram.sv`, which is shared with part 2: the makefile compiles it with `+define+MATMUL_8X8`, which selects the 8x8 top level instead of part 2's 4x4 one. Add the test name after the command:
+Four 4x4 arrays are tiled into an 8x8 array (`part_3_8x8/rtl/matmul_8x8.sv`), with two RAMs per matrix. Its top level, `matrix_multiplication_8x8`, lives in `rtl/matmul_with_ram.sv`, which is shared with part 2: the makefile compiles it with `+define+MATMUL_8X8`, which selects the 8x8 top level instead of part 2's 4x4 one. Add the test name after the command:
 
 ```bash
-cd part_3
+cd part_3_8x8
 make run ones           # compile and simulate one test
 make run random SEED=7  # random test with a different seed (default 1)
 make waves random       # simulate and open the waveform in Verdi
@@ -76,7 +81,7 @@ CLK_MHZ=500 make synth              # try a different target clock
 
 ## Part 4: APB slave interface
 
-The part 3 top level's start/done control FSM and its control and status ports are replaced by an APB slave (`apb_slave.sv`, completed from the provided skeleton). The new top level, `matrix_multiplication_8x8_apb` in `matmul_with_apb.sv`, has the APB signals `PCLK, PRESETn, PADDR, PWRITE, PSEL, PENABLE, PWDATA, PRDATA, PREADY` plus the same RAM ports as part 3. It reuses the part 3 array (`part_3/matmul_8x8.sv`) and the `ram` module from the root `matmul_with_ram.sv` without changing them.
+The part 3 top level's start/done control FSM and its control and status ports are replaced by an APB slave (`part_4_apb/rtl/apb_slave.sv`, completed from the provided skeleton). The new top level, `matrix_multiplication_8x8_apb` in `part_4_apb/rtl/matmul_with_apb.sv`, has the APB signals `PCLK, PRESETn, PADDR, PWRITE, PSEL, PENABLE, PWDATA, PRDATA, PREADY` plus the same RAM ports as part 3. It reuses the part 3 array (`part_3_8x8/rtl/matmul_8x8.sv`) and the `ram` module from `rtl/matmul_with_ram.sv` without changing them.
 
 Every register is 16 bits wide and `PADDR` is the register index. `PREADY` is always 1.
 
@@ -88,10 +93,10 @@ Every register is 16 bits wide and `PADDR` is the register index. `PREADY` is al
 | 4 / 5 / 6 | ADDR_A / ADDR_B / ADDR_C | [9:0] | R/W | RAM address of the first column of A, row of B, column of C. Reset value 0. |
 | 7 / 8 / 9 | STRIDE_A / STRIDE_B / STRIDE_C | [7:0] | R/W | Address step between columns of A, rows of B, columns of C. Reset value 1. |
 
-Unused bits and unmapped indices read as 0. The testbench drives the bus with the `write` and `read` tasks from `example_tb.v`: it writes the addresses and strides, writes START, polls DONE (`rdata[15]`), then reads FLAGS. Add the test name after the command:
+Unused bits and unmapped indices read as 0. The testbench drives the bus with the `write` and `read` tasks from `examples/example_tb.v`: it writes the addresses and strides, writes START, polls DONE (`rdata[15]`), then reads FLAGS. Add the test name after the command:
 
 ```bash
-cd part_4
+cd part_4_apb
 make run exception      # compile and simulate one test
 make waves exception    # simulate and open the waveform in Verdi
 make run_all            # run both tests and print a PASS/FAIL summary
@@ -106,6 +111,8 @@ make clean              # delete generated files
 Each test checks all 64 elements of C against expected values worked out by hand, and the FLAGS value read over APB against the expected flags. If no test is named, `exception` is used.
 
 ### Output files
+
+Paths are relative to the part's folder.
 
 | Command | Terminal output saved to | Waveform |
 |---|---|---|

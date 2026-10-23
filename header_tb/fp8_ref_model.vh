@@ -3,7 +3,7 @@
 //
 // Include this file inside a testbench module:
 //     `include "fp8_ref_model.vh"
-// and compile with +incdir+.. from the part_N folder.
+// and compile with +incdir+../header_tb from the part_N folder.
 //
 // The model decodes FP8 values to real numbers, computes the exact result
 // and rounds it by searching all finite FP8 values for the nearest one

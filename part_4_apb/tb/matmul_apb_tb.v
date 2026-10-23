@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////////
 // Testbench for the 8x8 FP8 matrix multiplier with the APB interface (part 4).
 // The testbench plays the CPU: it controls the matmul only through APB
-// register writes and reads, using the write/read tasks from example_tb.v.
+// register writes and reads, using the write/read tasks from examples/example_tb.v.
 // The CPU writes the addresses and strides, writes START, polls DONE, then
 // reads FLAGS. The RAMs are loaded and C is checked hierarchically, as in
 // part 3, against expected values worked out by hand.
@@ -39,7 +39,7 @@ module matmul_apb_tb;
 
     // Matrices, expected results, the register values the CPU programs
     // (addr_*, stride_*) and the shared load/check tasks
-    // (shared with part_3, see ../matmul_8x8_test_utils.vh)
+    // (shared with part_3, see header_tb/matmul_8x8_test_utils.vh)
 `include "matmul_8x8_test_utils.vh"
 
     //////////////////////////////////////////////////////////////////////

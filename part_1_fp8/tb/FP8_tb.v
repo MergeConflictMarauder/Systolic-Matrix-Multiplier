@@ -19,7 +19,7 @@ module FP8_tb;
     FP8_AddSub u_addsub (.a(a), .b(b), .operation(operation), .result(addsub_result), .flags(addsub_flags));
     FP8_Mult   u_mult   (.a(a), .b(b), .result(mult_result), .flags(mult_flags));
 
-    // FP8 E3M4 reference model (shared with part_3, see ../fp8_ref_model.vh)
+    // FP8 E3M4 reference model (shared with part_3, see header_tb/fp8_ref_model.vh)
 `include "fp8_ref_model.vh"
 
     // Print an FP8 number in hex and decimal, e.g. "0x38 (1.5)"

@@ -1,9 +1,9 @@
 //////////////////////////////////////////////////////////////////////////
 // Testbench code shared by the 8x8 matrix multiplier testbenches
-// (part_3/matmul_with_ram_tb.v and part_4/matmul_apb_tb.v).
+// (part_3_8x8/tb/matmul_with_ram_tb.v and part_4_apb/tb/matmul_apb_tb.v).
 //
 // Include this file inside a testbench module (plain Verilog-2001), before
-// the DUT instance, and compile with +incdir+.. from the part_N folder:
+// the DUT instance, and compile with +incdir+../header_tb from the part_N folder:
 //     `include "matmul_8x8_test_utils.vh"
 // The DUT instance must be named u_matmul and contain the six RAMs
 // matrix_A0/A1, matrix_B0/B1 and matrix_C0/C1, as both 8x8 top levels do.

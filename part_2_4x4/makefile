@@ -15,16 +15,16 @@ $(error Choose one test: make <target> normal  or  make <target> exception)
 endif
 
 SIM       = simv_$(TEST)
-TB        = $(TEST)_test_tb.v
+TB        = tb/$(TEST)_test_tb.v
 FSDB      = $(TEST)_fp8.fsdb
 LOG       = $(TEST)_simulation.log
 
 # RTL source files (the package must be compiled first)
-RTL       = ../matmul_pkg.sv \
-            ../part_1/FP8_AddSub.sv \
-            ../part_1/FP8_Mult.sv \
-            ../matmul.sv \
-            ../matmul_with_ram.sv
+RTL       = ../rtl/matmul_pkg.sv \
+            ../rtl/fp8/FP8_AddSub.sv \
+            ../rtl/fp8/FP8_Mult.sv \
+            ../rtl/matmul.sv \
+            ../rtl/matmul_with_ram.sv
 
 .PHONY: $(ACTIONS) $(TESTS)
 

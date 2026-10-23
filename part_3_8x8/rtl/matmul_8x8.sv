@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 // An 8x8 E3M4 matrix multiplier
-// matmul_4x4_systolic blocks in ../matmul.sv.
+// matmul_4x4_systolic blocks in rtl/matmul.sv.
 //
 //                B0 (cols 0..3)    B1 (cols 4..7)
 //                |                |

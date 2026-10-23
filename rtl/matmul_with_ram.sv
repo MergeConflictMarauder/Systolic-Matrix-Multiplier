@@ -5,7 +5,7 @@
 // Only one top level is compiled, chosen by the MATMUL_8X8 define:
 //   not defined : matrix_multiplication,     4x4 array, one RAM per matrix  (part 2)
 //   defined     : matrix_multiplication_8x8, 8x8 array, two RAMs per matrix (part 3,
-//                 compile with +define+MATMUL_8X8 and part_3/matmul_8x8.sv)
+//                 compile with +define+MATMUL_8X8 and part_3_8x8/rtl/matmul_8x8.sv)
 // The dual-port ram module is compiled in both cases.
 // Compile matmul_pkg.sv first.
 //////////////////////////////////////////////////////////////////////////

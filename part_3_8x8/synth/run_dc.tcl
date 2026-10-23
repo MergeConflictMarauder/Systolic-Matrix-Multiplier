@@ -6,9 +6,9 @@
 # /* 4x4 arrays and the 8x8 sequencing logic, not   */
 # /* the RAMs or the start/done control FSM.        */
 # /*                                                */
-# /* Run from part_3/:                              */
+# /* Run from part_3_8x8/:                          */
 # /*   make synth                                   */
-# /* or from part_3/synth/:                         */
+# /* or from part_3_8x8/synth/:                     */
 # /*   dc_shell-t -f run_dc.tcl                     */
 # /*                                                */
 # /* OSU FreePDK 45nm (needs PDK_DIR set)           */
@@ -17,15 +17,15 @@
 
 # User/project-specific settings
 
-# RTL source files, relative to part_3/synth/.
+# RTL source files, relative to part_3_8x8/synth/.
 # matmul_pkg.sv must come first because the other files
 # import its package.
 set my_verilog_files [list \
-    ../../matmul_pkg.sv \
-    ../../part_1/FP8_AddSub.sv \
-    ../../part_1/FP8_Mult.sv \
-    ../../matmul.sv \
-    ../matmul_8x8.sv \
+    ../../rtl/matmul_pkg.sv \
+    ../../rtl/fp8/FP8_AddSub.sv \
+    ../../rtl/fp8/FP8_Mult.sv \
+    ../../rtl/matmul.sv \
+    ../rtl/matmul_8x8.sv \
 ]
 
 # RTL top-level module

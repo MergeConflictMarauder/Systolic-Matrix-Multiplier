@@ -24,23 +24,23 @@ SEED      = 1
 
 SIM       = simv
 SIM_WAVES = simv_waves
-TB        = matmul_with_ram_tb.v
+TB        = tb/matmul_with_ram_tb.v
 FSDB      = $(TEST)_fp8.fsdb
 LOG       = $(TEST)_simulation.log
 
-# The testbench includes ../fp8_ref_model.vh and ../matmul_8x8_test_utils.vh
-INCDIR    = +incdir+..
+# The testbench includes fp8_ref_model.vh and matmul_8x8_test_utils.vh from ../header_tb
+INCDIR    = +incdir+../header_tb
 
-# ../matmul_with_ram.sv is shared with part 2; MATMUL_8X8 selects its 8x8 top level
+# ../rtl/matmul_with_ram.sv is shared with part 2; MATMUL_8X8 selects its 8x8 top level
 DEFINES   = +define+MATMUL_8X8
 
 # RTL source files (the package must be compiled first).
-RTL       = ../matmul_pkg.sv \
-            ../part_1/FP8_AddSub.sv \
-            ../part_1/FP8_Mult.sv \
-            ../matmul.sv \
-            matmul_8x8.sv \
-            ../matmul_with_ram.sv
+RTL       = ../rtl/matmul_pkg.sv \
+            ../rtl/fp8/FP8_AddSub.sv \
+            ../rtl/fp8/FP8_Mult.sv \
+            ../rtl/matmul.sv \
+            rtl/matmul_8x8.sv \
+            ../rtl/matmul_with_ram.sv
 
 .PHONY: $(ACTIONS) $(TESTS)
 

@@ -5,13 +5,13 @@ SIM       = simv
 FSDB      = $(TOP).fsdb
 
 # RTL source files
-RTL       = FP8_AddSub.sv \
-            FP8_Mult.sv
+RTL       = ../rtl/fp8/FP8_AddSub.sv \
+            ../rtl/fp8/FP8_Mult.sv
 
-TB        = FP8_tb.v
+TB        = tb/FP8_tb.v
 
-# The testbench includes the shared reference model ../fp8_ref_model.vh
-INCDIR    = +incdir+..
+# The testbench includes the shared reference model ../header_tb/fp8_ref_model.vh
+INCDIR    = +incdir+../header_tb
 
 .PHONY: all compile run waves clean
 

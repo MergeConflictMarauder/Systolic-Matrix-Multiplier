@@ -20,27 +20,27 @@ endif
 
 SIM       = simv
 SIM_WAVES = simv_waves
-TB        = matmul_apb_tb.v
+TB        = tb/matmul_apb_tb.v
 FSDB      = $(TEST)_apb.fsdb
 LOG       = $(TEST)_simulation.log
 
-# The testbench includes the shared tasks ../matmul_8x8_test_utils.vh
-INCDIR    = +incdir+..
+# The testbench includes the shared tasks ../header_tb/matmul_8x8_test_utils.vh
+INCDIR    = +incdir+../header_tb
 
-# ../matmul_with_ram.sv is shared with parts 2 and 3; MATMUL_8X8 selects the
+# ../rtl/matmul_with_ram.sv is shared with parts 2 and 3; MATMUL_8X8 selects the
 # 8x8 version, which also provides the ram module used here
 DEFINES   = +define+MATMUL_8X8
 
 # RTL source files (the package must be compiled first, and apb_slave.sv
 # before matmul_with_apb.sv because it defines the register macros)
-RTL       = ../matmul_pkg.sv \
-            ../part_1/FP8_AddSub.sv \
-            ../part_1/FP8_Mult.sv \
-            ../matmul.sv \
-            ../part_3/matmul_8x8.sv \
-            ../matmul_with_ram.sv \
-            apb_slave.sv \
-            matmul_with_apb.sv
+RTL       = ../rtl/matmul_pkg.sv \
+            ../rtl/fp8/FP8_AddSub.sv \
+            ../rtl/fp8/FP8_Mult.sv \
+            ../rtl/matmul.sv \
+            ../part_3_8x8/rtl/matmul_8x8.sv \
+            ../rtl/matmul_with_ram.sv \
+            rtl/apb_slave.sv \
+            rtl/matmul_with_apb.sv
 
 .PHONY: $(ACTIONS) $(TESTS)
 

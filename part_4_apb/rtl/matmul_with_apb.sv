@@ -17,8 +17,8 @@
 // and read C. PCLK clocks the whole design and PRESETn resets it. The 8x8
 // array clears its PE accumulators at every start, so no separate PE reset port is needed.
 //
-// Compile after matmul_pkg.sv, the FP8 units, matmul.sv, part_3/matmul_8x8.sv,
-// ../matmul_with_ram.sv (with +define+MATMUL_8X8, for the ram module) and apb_slave.sv.
+// Compile after rtl/matmul_pkg.sv, the FP8 units, rtl/matmul.sv, part_3_8x8/rtl/matmul_8x8.sv,
+// rtl/matmul_with_ram.sv (with +define+MATMUL_8X8, for the ram module) and apb_slave.sv.
 //////////////////////////////////////////////////////////////////////////
 module matrix_multiplication_8x8_apb
     import matmul_pkg::*;
