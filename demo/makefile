@@ -48,7 +48,7 @@ run: compile
 waves:
 	$(VCS) $(VCS_FLAGS) $(INCDIR) $(DEFINES) +define+FSDB_DUMP -top $(TOP) $(RTL) $(TB) -o $(SIM_WAVES)
 	./$(SIM_WAVES) -exitstatus 2>&1 | tee $(LOG)
-	verdi -dbdir $(SIM_WAVES).daidir -ssf $(FSDB) &
+	verdi -dbdir $(SIM_WAVES).daidir -ssf $(FSDB) -sswr signal.rc &
 
 # Remove generated simulation and waveform files
 clean:

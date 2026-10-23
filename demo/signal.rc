@@ -6,21 +6,21 @@ viewPort 0 11 1920 789 166 76
 
 ; File list:
 ; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
-openDirFile -d / "" "/home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb"
+openDirFile -d / "" "demo.fsdb"
 
 ; file time scale:
 ; fileTimeScale ### s|ms|us|ns|ps
 
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/fp_a[7:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/u_matmul/matrix_A0/addr0[9:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/add_result[7:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/u_matmul/u_apb/address_mat_a[9:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -BIN /demo_tb/u_matmul/u_matmul_8x8/exception_flags[4:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/mult_flags[4:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/fp_b[7:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -BIN /demo_tb/u_matmul/u_matmul_8x8/flags_tl[4:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -BIN /demo_tb/add_flags[4:0]
-individualSetFormt -File /home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb -HEX /demo_tb/mult_result[7:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/fp_a[7:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/u_matmul/matrix_A0/addr0[9:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/add_result[7:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/u_matmul/u_apb/address_mat_a[9:0]
+individualSetFormt -File demo.fsdb -BIN /demo_tb/u_matmul/u_matmul_8x8/exception_flags[4:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/mult_flags[4:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/fp_b[7:0]
+individualSetFormt -File demo.fsdb -BIN /demo_tb/u_matmul/u_matmul_8x8/flags_tl[4:0]
+individualSetFormt -File demo.fsdb -BIN /demo_tb/add_flags[4:0]
+individualSetFormt -File demo.fsdb -HEX /demo_tb/mult_result[7:0]
 
 ; signal spacing:
 signalSpacing 5
@@ -29,7 +29,7 @@ signalSpacing 5
 windowTimeUnit 1ns
 
 ; waveform viewport range
-zoom 0.000000 376.438841 1n
+zoom 0.000000 0.000000 1n
 cursor 150.000000
 marker 0.000000
 
@@ -59,7 +59,7 @@ curSTATUS ByChange
 
 
 addGroup "Control"
-activeDirFile "" "/home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb"
+activeDirFile "" "demo.fsdb"
 addSignal -h 16 /demo_tb/clk
 addSignal -h 16 -holdScope reset
 addGroup "FP8"
@@ -103,7 +103,7 @@ addGroup "--"
 
 ; getSignalForm Scope Hierarchy Status
 ; active file of getSignalForm
-activeDirFile "" "/home/a34433_asu/Documents/LAB3/Systolic-Matrix-Multiplier/demo/demo.fsdb"
+activeDirFile "" "demo.fsdb"
 
 GETSIGNALFORM_SCOPE_HIERARCHY_BEGIN
 getSignalForm close
